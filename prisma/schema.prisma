@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  email      String    @unique
+  name       String?
+  password   String
+  boards     Board[]   @relation("BoardOwner")     // les tableaux dont il est propriétaire
+  memberOf   Board[]   @relation("BoardMembers")   // les tableaux où il est membre
+  comments   Comment[]
+  invites    Invite[]  @relation("InvitedBy")
+  createdAt  DateTime  @default(now())
+}
+
+model Board {
+  id        Int       @id @default(autoincrement())
+  title     String
+  owner     User      @relation("BoardOwner", fields: [ownerId], references: [id])
+  ownerId   Int
+  members   User[]    @relation("BoardMembers")     // many-to-many implicite
+  lists     List[]
+  invites   Invite[]
+  createdAt DateTime  @default(now())
+}
+
+model List {
+  id        Int       @id @default(autoincrement())
+  title     String
+  board     Board     @relation(fields: [boardId], references: [id])
+  boardId   Int
+  cards     Card[]
+  order     Int                                       // position de la colonne
+  createdAt DateTime  @default(now())
+}
+
+model Card {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  list        List      @relation(fields: [listId], references: [id])
+  listId      Int
+  comments    Comment[]
+  order       Int                                       // position dans la liste
+  createdAt   DateTime  @default(now())
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+  card      Card      @relation(fields: [cardId], references: [id])
+  cardId    Int
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  Int
+  createdAt DateTime  @default(now())
+}
+
+model Invite {
+  id          Int       @id @default(autoincrement())
+  email       String
+  board       Board     @relation(fields: [boardId], references: [id])
+  boardId     Int
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById Int
+  accepted    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
